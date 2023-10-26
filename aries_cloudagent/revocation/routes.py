@@ -844,6 +844,35 @@ async def get_rev_reg_indy_recs(request: web.BaseRequest):
             "rev_reg_delta": rev_reg_delta,
         }
     )
+@docs(
+    tags=["revocation"],
+    summary="Get revocation registry from ledger",
+)
+@match_info_schema(RevRegIdMatchInfoSchema())
+@response_schema(RevRegResultSchema(), 200, description="")
+async def get_rev_reg_def(request: web.BaseRequest):
+    """Request handler to get details of revoked credentials from ledger.
+
+    Args:
+        request: aiohttp request object
+
+    Returns:
+        Detailes of revoked credentials from ledger
+
+    """
+    context: AdminRequestContext = request["context"]
+
+    rev_reg_id = request.match_info["rev_reg_id"]
+
+    revoc = IndyRevocation(context.profile)
+    rev_reg_delta = await revoc.get_issuer_rev_reg_def(rev_reg_id)
+
+    return web.json_response(
+        {
+            "rev_reg_def": rev_reg_delta,
+        }
+    )
+
 
 
 @docs(
@@ -1678,6 +1707,11 @@ async def register(app: web.Application):
             web.get(
                 "/revocation/registry/{rev_reg_id}/issued/indy_recs",
                 get_rev_reg_indy_recs,
+                allow_head=False,
+            ),
+            web.get(
+                "/revocation/registry/{rev_reg_id}/definition",
+                get_rev_reg_def,
                 allow_head=False,
             ),
             web.post("/revocation/create-registry", create_rev_reg),
